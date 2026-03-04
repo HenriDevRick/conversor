@@ -1,6 +1,7 @@
 import base64
 import tempfile
 import os
+import json
 from pdf2docx import Converter
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
@@ -11,7 +12,8 @@ def handler(request):
     if request.method != "POST":
         return {
             "statusCode": 405,
-            "body": "Método não permitido"
+            "body": json.dumps({"error":"Método não permitido"}),
+            "headers": {"Content-Type":"application/json"}
         }
 
     files = request.files
@@ -25,8 +27,6 @@ def handler(request):
         with tempfile.NamedTemporaryFile(delete=False) as temp_input:
             temp_input.write(file.read())
             input_path = temp_input.name
-
-        name = file.filename.split(".")[0]
 
         try:
 
@@ -55,7 +55,11 @@ def handler(request):
                 document.save(output_path)
 
             else:
-                return {"statusCode":400, "body":"Conversão inválida"}
+                return {
+                    "statusCode":400,
+                    "body":json.dumps({"error":"Conversão inválida"}),
+                    "headers":{"Content-Type":"application/json"}
+                }
 
             with open(output_path, "rb") as f:
                 encoded = base64.b64encode(f.read()).decode("utf-8")
@@ -67,14 +71,13 @@ def handler(request):
 
         except Exception as e:
             return {
-                "statusCode": 500,
-                "body": str(e)
+                "statusCode":500,
+                "body":json.dumps({"error":str(e)}),
+                "headers":{"Content-Type":"application/json"}
             }
 
     return {
-        "statusCode": 200,
-        "body": str(results),
-        "headers": {
-            "Content-Type": "application/json"
-        }
+        "statusCode":200,
+        "body":json.dumps(results),
+        "headers":{"Content-Type":"application/json"}
     }
