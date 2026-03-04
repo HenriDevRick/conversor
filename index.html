@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Conversor Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg,#1e3c72,#2a5298);
+    min-height:100vh;
+    color:white;
+}
+
+header{
+    text-align:center;
+    padding:30px;
+    font-size:26px;
+    font-weight:600;
+    letter-spacing:1px;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+    padding:20px;
+}
+
+/* Cards */
+
+.card-options{
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+    gap:20px;
+    margin-bottom:40px;
+}
+
+.card{
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(12px);
+    border-radius:16px;
+    padding:25px;
+    text-align:center;
+    cursor:pointer;
+    transition: all 0.3s ease;
+    border:2px solid transparent;
+}
+
+.card i{
+    font-size:32px;
+    margin-bottom:15px;
+}
+
+.card:hover{
+    transform: translateY(-8px) scale(1.03);
+    background: rgba(255,255,255,0.2);
+}
+
+.card.selected{
+    border:2px solid #00ffcc;
+    box-shadow:0 0 15px #00ffcc;
+}
+
+/* Drop zone */
+
+.drop-zone{
+    background: rgba(255,255,255,0.15);
+    padding:50px;
+    border-radius:20px;
+    border:2px dashed #00ffcc;
+    text-align:center;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.drop-zone.dragover{
+    background: rgba(0,255,204,0.2);
+    transform: scale(1.02);
+}
+
+/* Button */
+
+button{
+    margin-top:30px;
+    padding:15px 40px;
+    border:none;
+    border-radius:12px;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    background:#00ffcc;
+    color:#003333;
+    transition:0.3s;
+}
+
+button:hover{
+    transform: scale(1.05);
+}
+
+/* Progress */
+
+.progress{
+    margin-top:25px;
+    height:18px;
+    background:rgba(255,255,255,0.2);
+    border-radius:10px;
+    overflow:hidden;
+    display:none;
+}
+
+.progress-bar{
+    height:100%;
+    width:0%;
+    background:#00ffcc;
+    transition: width 0.3s ease;
+}
+
+/* Loader */
+
+.loader{
+    margin-top:20px;
+    display:none;
+}
+
+.loader i{
+    font-size:28px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin{
+    from{transform:rotate(0deg);}
+    to{transform:rotate(360deg);}
+}
+
+/* Downloads */
+
+#downloads a{
+    display:block;
+    margin-top:10px;
+    color:#00ffcc;
+    text-decoration:none;
+    transition:0.2s;
+}
+
+#downloads a:hover{
+    text-decoration:underline;
+}
+</style>
+</head>
+<body>
+
+<header>
+    <i class="fa-solid fa-file-arrow-up"></i>
+    Conversor Profissional de Documentos
+</header>
+
+<div class="container">
+
+<div class="card-options">
+<div class="card" data-type="pdf_docx">
+<i class="fa-solid fa-file-pdf"></i>
+<p>PDF → DOCX</p>
+</div>
+
+<div class="card" data-type="docx_pdf">
+<i class="fa-solid fa-file-word"></i>
+<p>DOCX → PDF</p>
+</div>
+
+<div class="card" data-type="txt_pdf">
+<i class="fa-solid fa-file-lines"></i>
+<p>TXT → PDF</p>
+</div>
+
+<div class="card" data-type="txt_docx">
+<i class="fa-solid fa-file-signature"></i>
+<p>TXT → DOCX</p>
+</div>
+
+<div class="card" data-type="odt_pdf">
+<i class="fa-solid fa-file"></i>
+<p>ODT → PDF</p>
+</div>
+</div>
+
+<div class="drop-zone" id="dropZone">
+<i class="fa-solid fa-cloud-arrow-up fa-2x"></i>
+<p>Arraste seus arquivos aqui ou clique para selecionar</p>
+</div>
+
+<input type="file" id="fileInput" multiple hidden>
+
+<div style="text-align:center">
+<button id="convertBtn">
+<i class="fa-solid fa-bolt"></i> Converter
+</button>
+</div>
+
+<div class="progress" id="progress">
+<div class="progress-bar" id="progressBar"></div>
+</div>
+
+<div class="loader" id="loader">
+<i class="fa-solid fa-spinner"></i>
+</div>
+
+<div id="downloads"></div>
+
+</div>
+
+<script>
+let selectedType="";
+let selectedFiles=[];
+
+const cards=document.querySelectorAll(".card");
+cards.forEach(card=>{
+card.addEventListener("click",()=>{
+cards.forEach(c=>c.classList.remove("selected"));
+card.classList.add("selected");
+selectedType=card.dataset.type;
+});
+});
+
+const dropZone=document.getElementById("dropZone");
+const fileInput=document.getElementById("fileInput");
+
+dropZone.addEventListener("click",()=>fileInput.click());
+
+fileInput.addEventListener("change",(e)=>{
+selectedFiles=[...e.target.files];
+});
+
+dropZone.addEventListener("dragover",(e)=>{
+e.preventDefault();
+dropZone.classList.add("dragover");
+});
+
+dropZone.addEventListener("dragleave",()=>{
+dropZone.classList.remove("dragover");
+});
+
+dropZone.addEventListener("drop",(e)=>{
+e.preventDefault();
+dropZone.classList.remove("dragover");
+selectedFiles=[...e.dataTransfer.files];
+});
+
+document.getElementById("convertBtn").addEventListener("click",()=>{
+if(!selectedType||selectedFiles.length===0){
+alert("Selecione tipo de conversão e arquivos.");
+return;
+}
+
+const formData=new FormData();
+formData.append("conversion_type",selectedType);
+selectedFiles.forEach(file=>{
+formData.append("files",file);
+});
+
+const xhr=new XMLHttpRequest();
+xhr.open("POST","/api/convert",true);
+
+document.getElementById("progress").style.display="block";
+document.getElementById("loader").style.display="block";
+
+xhr.upload.onprogress=function(e){
+if(e.lengthComputable){
+document.getElementById("progressBar").style.width=
+(e.loaded/e.total*100)+"%";
+}
+};
+
+xhr.onload=function(){
+document.getElementById("loader").style.display="none";
+const response=JSON.parse(xhr.responseText);
+response.files.forEach(file=>{
+const a=document.createElement("a");
+a.href="/download/"+file;
+a.innerHTML='<i class="fa-solid fa-download"></i> '+file;
+document.getElementById("downloads").appendChild(a);
+});
+};
+
+xhr.send(formData);
+});
+</script>
+
+</body>
+</html>
