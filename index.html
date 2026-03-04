@@ -3,199 +3,186 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DocConvert | Conversor Online</title>
-
+<title>DocConvert</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
 body{
     margin:0;
-    font-family:Arial, Helvetica, sans-serif;
-    background:linear-gradient(135deg,#667eea,#764ba2);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:100vh;
+    font-family:Inter, Arial, sans-serif;
+    background:#f5f7fb;
 }
 
-.container{
-    background:#fff;
-    width:95%;
-    max-width:600px;
-    padding:30px;
+.wrapper{
+    max-width:700px;
+    margin:80px auto;
+    padding:40px;
+    background:white;
     border-radius:16px;
-    box-shadow:0 20px 50px rgba(0,0,0,0.2);
-    text-align:center;
+    box-shadow:0 10px 40px rgba(0,0,0,0.08);
 }
 
 h1{
-    margin-bottom:20px;
-    color:#333;
+    margin:0 0 20px;
+    font-weight:600;
+    font-size:26px;
 }
 
-select,input,button{
+.select{
     width:100%;
-    padding:12px;
-    margin-top:10px;
-    border-radius:8px;
+    padding:14px;
+    border-radius:10px;
     border:1px solid #ddd;
-    font-size:14px;
+    margin-bottom:20px;
+}
+
+.upload-area{
+    border:2px dashed #cfd8e3;
+    padding:40px;
+    text-align:center;
+    border-radius:12px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.upload-area:hover{
+    border-color:#4f46e5;
+}
+
+.upload-area i{
+    font-size:30px;
+    color:#4f46e5;
+}
+
+.upload-area p{
+    margin-top:10px;
+    color:#555;
 }
 
 button{
-    background:#667eea;
-    color:white;
+    width:100%;
+    margin-top:20px;
+    padding:14px;
     border:none;
+    border-radius:10px;
+    background:#4f46e5;
+    color:white;
+    font-weight:600;
     cursor:pointer;
-    font-weight:bold;
     transition:0.3s;
 }
 
 button:hover{
-    background:#5a67d8;
+    background:#4338ca;
 }
 
 #loader{
     display:none;
+    text-align:center;
     margin-top:20px;
 }
 
-.spinner{
-    border:5px solid #eee;
-    border-top:5px solid #667eea;
-    border-radius:50%;
-    width:40px;
-    height:40px;
-    animation:spin 1s linear infinite;
-    margin:auto;
-}
-
-@keyframes spin{
-    100%{transform:rotate(360deg);}
-}
-
-#downloads{
-    margin-top:20px;
-    text-align:left;
-}
-
-#downloads a, #downloads p{
+#downloads a{
     display:block;
-    padding:10px;
-    background:#f4f4f4;
-    border-radius:6px;
-    margin-top:5px;
+    margin-top:10px;
+    padding:12px;
+    border-radius:8px;
+    background:#eef2ff;
     text-decoration:none;
-    color:#333;
-    font-size:14px;
-}
-
-#downloads a:hover{
-    background:#e2e8f0;
+    color:#1e1e1e;
 }
 </style>
 </head>
 <body>
 
-<div class="container">
-    <h1><i class="fa-solid fa-file-arrow-up"></i> DocConvert</h1>
+<div class="wrapper">
+    <h1>DocConvert</h1>
 
-    <select id="conversionType">
+    <select id="conversionType" class="select">
         <option value="pdf_docx">PDF → DOCX</option>
         <option value="txt_pdf">TXT → PDF</option>
         <option value="txt_docx">TXT → DOCX</option>
     </select>
 
-    <input type="file" id="fileInput" multiple>
-
-    <button onclick="convertFiles()">
-        <i class="fa-solid fa-gear"></i> Converter Arquivos
-    </button>
-
-    <div id="loader">
-        <div class="spinner"></div>
-        <p>Convertendo...</p>
+    <div class="upload-area" onclick="fileInput.click()">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <p>Clique para enviar arquivos</p>
+        <input type="file" id="fileInput" hidden multiple>
     </div>
 
+    <div id="fileList"></div>
+
+    <button onclick="convertFiles()">Converter Arquivos</button>
+
+    <div id="loader">Convertendo...</div>
     <div id="downloads"></div>
 </div>
 
 <script>
-let selectedFiles = [];
-const fileInput = document.getElementById("fileInput");
+let selectedFiles=[];
+const fileInput=document.getElementById("fileInput");
 
 fileInput.addEventListener("change",(e)=>{
     selectedFiles=[...e.target.files];
-
-    const list=document.getElementById("downloads");
+    const list=document.getElementById("fileList");
     list.innerHTML="";
-
     selectedFiles.forEach(file=>{
-        const p=document.createElement("p");
-        p.innerHTML='<i class="fa-solid fa-file"></i> '+file.name;
-        list.appendChild(p);
+        list.innerHTML+=`<p>${file.name}</p>`;
     });
 });
 
 function convertFiles(){
-
     if(selectedFiles.length===0){
-        alert("Selecione ao menos um arquivo!");
+        alert("Selecione arquivos.");
         return;
     }
 
     const formData=new FormData();
-    const conversionType=document.getElementById("conversionType").value;
+    const type=document.getElementById("conversionType").value;
 
     selectedFiles.forEach((file,i)=>{
         formData.append("file"+i,file);
     });
 
-    formData.append("conversion_type",conversionType);
+    formData.append("conversion_type",type);
 
     document.getElementById("loader").style.display="block";
     document.getElementById("downloads").innerHTML="";
 
-    const xhr=new XMLHttpRequest();
-    xhr.open("POST","/api/convert",true);
-
-    xhr.onload=function(){
+    fetch("/api/convert",{
+        method:"POST",
+        body:formData
+    })
+    .then(res=>res.json())
+    .then(data=>{
         document.getElementById("loader").style.display="none";
 
-        if(xhr.status!==200){
-            alert("Erro na conversão.");
-            return;
-        }
-
-        const response=JSON.parse(xhr.responseText);
-
-        response.forEach(file=>{
-            const link=document.createElement("a");
-
+        data.forEach(file=>{
             const blob=b64toBlob(file.content);
             const url=URL.createObjectURL(blob);
 
+            const link=document.createElement("a");
             link.href=url;
             link.download=file.filename;
-            link.innerHTML='<i class="fa-solid fa-download"></i> '+file.filename;
+            link.innerHTML="⬇ "+file.filename;
 
             document.getElementById("downloads").appendChild(link);
         });
-    };
-
-    xhr.send(formData);
+    })
+    .catch(err=>{
+        document.getElementById("loader").style.display="none";
+        alert("Erro na conversão.");
+        console.error(err);
+    });
 }
 
-function b64toBlob(b64Data){
-    const byteCharacters=atob(b64Data);
+function b64toBlob(b64){
+    const byteCharacters=atob(b64);
     const byteNumbers=new Array(byteCharacters.length);
-
     for(let i=0;i<byteCharacters.length;i++){
         byteNumbers[i]=byteCharacters.charCodeAt(i);
     }
-
-    const byteArray=new Uint8Array(byteNumbers);
-    return new Blob([byteArray]);
+    return new Blob([new Uint8Array(byteNumbers)]);
 }
 </script>
 
